@@ -158,5 +158,3 @@ def push_report():
 if __name__ == '__main__':
     page_news()
     push_report()
-
-# ./NewsDaily/WeChatNews.py
