@@ -2,6 +2,8 @@
 利用企业微信机器人推送新闻集合到群聊中
 在对应文件中添加自己机器人的`WebKey`即可
 
+可以搭配定时任务平台来实现自动化，如：青龙等项目
+
 ## 依赖
 运行环境 Python3
 相关依赖 requests、python-docx、lxml、pandas
