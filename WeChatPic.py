@@ -7,12 +7,16 @@ import os
 from copy import copy
 from urllib3 import encode_multipart_formdata
 
+def clean_data():
+    # 删除当前目录下的news.docx文件
+    if os.path.exists("./news.docx"):
+        os.remove("./news.docx")
+        print("清除缓存中...")
+    else:
+        print("暂无缓存清除...")
+
+
 def get_news():
-    url = "https://ef.zhiweidata.com/filterNew.do?firstType=全部&page=1"
-    headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                        "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.72 Safari/537.36"
-    }
     event_rate = []  # 事件评分
     event_name = []  # 事件名称
     event_desc = []  # 事件描述
@@ -22,31 +26,45 @@ def get_news():
     document = Document()
     document.styles['Normal'].font.name = 'Times New Roman'
     document.styles['Normal']._element.rPr.rFonts.set(qn('w:eastAsia'), u'微软雅黑')
-    
 
-    response = requests.get(url=url, headers=headers)
-    news = json.loads(response.text)
-    for item in news["data"]["events"]:
-        event_rate.append(item["index"])
-        event_name.append(item["eventname"])
-        event_desc.append(item["desc"])
-        event_time.append(item["startTime"]/1000)
-        event_type.append(item["type"])
+    for i in range(1, 3): # 获取前两页数据
+        print("正在获取第" + str(i) + "页数据")
+        url = f"https://ef.zhiweidata.com/filterNew.do?firstType=全部&page={i}"
+        headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                            "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.72 Safari/537.36"
+        }
+        
+        response = requests.get(url=url, headers=headers)
+        news = json.loads(response.text)
+        for item in news["data"]["events"]:
+            event_rate.append(item["index"])
+            event_name.append(item["eventname"])
+            event_desc.append(item["desc"])
+            event_time.append(item["startTime"]/1000)
+            event_type.append(item["type"])
     
     print("--------------------- 今日热点 ---------------------")
     for i in range(len(news["data"]["events"])):
-        document.add_paragraph("影响力指数: " + str(event_rate[i]))
-        document.add_paragraph(event_name[i])
-        document.add_paragraph(event_desc[i])
-        document.add_paragraph(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(event_time[i])))
-        document.add_paragraph("事件类型:" + event_type[i])
-        document.add_paragraph("\n")
-        print("影响力指数: ", event_rate[i])
-        print(event_name[i])
-        print(event_desc[i])
-        print(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(event_time[i])))
-        print("事件类型:", event_type[i])
-        print("\n")
+        day_time = time.strftime('%Y-%m-%d', time.localtime(event_time[i]))
+        # 判断日期是否是今天、昨天、前天
+        if (day_time == time.strftime('%Y-%m-%d', time.localtime(time.time() - 86400*2)) or \
+            day_time == time.strftime('%Y-%m-%d', time.localtime(time.time() - 86400)) or \
+            day_time == time.strftime('%Y-%m-%d', time.localtime(time.time()))) and \
+            event_type[i] != "娱乐":
+
+            document.add_paragraph("影响力指数: " + str(event_rate[i]))
+            document.add_paragraph(event_name[i])
+            document.add_paragraph(event_desc[i])
+            document.add_paragraph(day_time)
+            document.add_paragraph("事件类型:" + event_type[i])
+            document.add_paragraph("\n")
+            print("影响力指数: ", event_rate[i])
+            print(event_name[i])
+            print(event_desc[i])
+            print(time.strftime('%Y-%m-%d', time.localtime(event_time[i])))
+            print("事件类型:", event_type[i])
+            print("\n")
     document.save('news.docx')
     print("---------------------------------------------------")
     
@@ -95,6 +113,9 @@ def push_report():
     print("------- 消息已经推送 -------")
 
 if __name__ == '__main__':
+    clean_data()
+    time.sleep(1) # 防止文件未删除
     get_news()
+    time.sleep(1) # 防止文件未生成
     push_report()
     
